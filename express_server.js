@@ -1,7 +1,7 @@
 const bodyParser = require("body-parser");
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8081; // default port 8080
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 const urlDatabase = {
@@ -40,14 +40,23 @@ app.get("/urls/:shortURL/", (req, res) => {
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
+
 app.post("/urls/:shortURL/delete",(req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
 }); 
+
 app.get("/hello", (req, res) => {
     const templateVars = { greeting: 'Hello World!'};
     res.render("hello_world", templateVars);
   });
+
+app.post("/urls/:shortURL/",(req, res) => {
+  //Update urlDatabase Obj 
+  urlDatabase[req.params.shortURL] = req.body.longURL
+   console.log("inside edit post route", req);
+    res.redirect("/urls");
+  }); 
   
   app.post("/urls", (req, res) => {
     console.log(req.body);  // Log the POST request body to the console
@@ -56,12 +65,14 @@ app.get("/hello", (req, res) => {
     urlDatabase[shortURL]=`http://${req.body.longURL}`
     res.redirect(`/urls/${shortURL}`);         
   });
+
   app.get("/u/:shortURL", (req, res) => {
     const shortURL = req.params.shortURL
     const longURL = urlDatabase[shortURL]
     console.log(longURL)
     res.redirect(longURL);
   });
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
