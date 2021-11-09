@@ -46,7 +46,10 @@ app.get("/hello", (req, res) => {
   
   app.post("/urls", (req, res) => {
     console.log(req.body);  // Log the POST request body to the console
-    res.send(generateRandomString(6));         
+    //the shortURL-longURL key-value pair should be saved to the urlDatabase when it receives a POST request to /urls
+   let shortURL = generateRandomString(6)
+    urlDatabase[shortURL]= `http:// ${req.body.longURL}`
+    res.redirect(`/urls/:${shortURL}`);         
   });
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
