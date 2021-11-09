@@ -19,7 +19,6 @@ function generateRandomString(length) {
 }
 
 
-
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -31,8 +30,11 @@ app.get("/urls", (req,res) => {
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
-app.get("/urls/:shortURL", (req, res) => {
+app.get("/urls/:shortURL/", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  //  console.log("req",req.params)
+  // console.log("Urldatabase", urlDatabase)
+  // // console.log("template", templateVars)
   res.render("urls_show", templateVars);
 });
 app.get("/urls.json", (req, res) => {
@@ -51,8 +53,8 @@ app.get("/hello", (req, res) => {
     console.log(req.body);  // Log the POST request body to the console
     //the shortURL-longURL key-value pair should be saved to the urlDatabase when it receives a POST request to /urls
    let shortURL = generateRandomString(6)
-    urlDatabase[shortURL]= `http:// ${req.body.longURL}`
-    res.redirect(`/urls/:${shortURL}`);         
+    urlDatabase[shortURL]=`http://${req.body.longURL}`
+    res.redirect(`/urls/${shortURL}`);         
   });
   app.get("/u/:shortURL", (req, res) => {
     const shortURL = req.params.shortURL
