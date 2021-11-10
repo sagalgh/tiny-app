@@ -26,15 +26,18 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  //
+
+  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {username: req.cookies["username"]}
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL/", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] };
   //  console.log("req",req.params)
   // console.log("Urldatabase", urlDatabase)
   // // console.log("template", templateVars)
@@ -51,7 +54,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.get("/hello", (req, res) => {
-  const templateVars = { greeting: 'Hello World!' };
+  const templateVars = { greeting: 'Hello World!', username: req.cookies["username"]};
   res.render("hello_world", templateVars);
 });
 
@@ -73,7 +76,7 @@ app.post("/urls", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL
   const longURL = urlDatabase[shortURL]
-  console.log(longURL)
+  // console.log(longURL)
   res.redirect(longURL);
 });
 
@@ -82,11 +85,15 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post("/login", (req,res) => {
 const username = req.body.username
+console.log(req.body.username)
 res.cookie("username", username)
 res.redirect("/urls")
 });
-
-
+//create a logout if username exists
+app.post("/logout", (req,res) =>{
+  res.clearCookie("username")
+  res.redirect("/urls")
+})
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
