@@ -72,15 +72,32 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("urls_registration")
 });
+//create helper function that checks if email is already in database
+function checkIfEmailIsRegistered(email){
+for (let user in users){
+  if (users[user].email === email){
+    return users[user]
+  }
+}
+return false
+}
 
 app.post("/register", (req, res) => {
+  //created new user object
   const user = { id: generateRandomString(4), email: req.body.email, password: req.body.password }
-  //add user object to the global users object, it should include: user's id, email and password
+  if (!user.password || !user.email){
+    res.status(400).send('Error: Status Code- 400');
+  }
+  if (checkIfEmailIsRegistered(req.body.email)){
+    res.status(400).send('Error: Email is already registered');
+  }
   users[user.id] = user;
-  //console.log(users)
+
   res.cookie("user_id", user.id)
   res.redirect("/urls");
 });
+
+
 
 
 
