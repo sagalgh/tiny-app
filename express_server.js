@@ -40,7 +40,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: req.cookies.user_id};
+  const templateVars = { urls: urlDatabase, user: req.cookies.user_id };
   res.render("urls_index", templateVars);
 
 });
@@ -70,25 +70,27 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("urls_registration")
+  res.render("registration")
 });
 //create helper function that checks if email is already in database
-function checkIfEmailIsRegistered(email){
-for (let user in users){
-  if (users[user].email === email){
-    return users[user]
+function checkIfEmailIsRegistered(email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return users[user]
+    }
   }
-}
-return false
+  return false
 }
 
 app.post("/register", (req, res) => {
   //created new user object
   const user = { id: generateRandomString(4), email: req.body.email, password: req.body.password }
-  if (!user.password || !user.email){
+  //check is email or password is an empty string
+  if (!user.password || !user.email) {
     res.status(400).send('Error: Status Code- 400');
   }
-  if (checkIfEmailIsRegistered(req.body.email)){
+  //check if email is already registered
+  if (checkIfEmailIsRegistered(req.body.email)) {
     res.status(400).send('Error: Email is already registered');
   }
   users[user.id] = user;
@@ -98,11 +100,8 @@ app.post("/register", (req, res) => {
 });
 
 
-
-
-
 app.get("/hello", (req, res) => {
-  const templateVars = { greeting: 'Hello World!', username: req.cookies["username"] };
+  const templateVars = { greeting: 'Hello World!', user: users[req.cookies["user_id"]]};
   res.render("hello_world", templateVars);
 });
 
@@ -130,14 +129,36 @@ app.get("/u/:shortURL", (req, res) => {
 
 //In the _header.ejs partial of app, create a <form> that POSTs to /login
 //Add an endpoint to handle a POST to /login in to Express server
+app.get("/login", (req, res) => {
+  res.render("login_form")
+});
+
+//create helper function that checks if password given matches existing password 
+function checkIfPasswordMatch(password) {
+  for (let user in users) {
+    if (users[user].password === password) {
+      return users[user]
+    }
+  }
+  return false
+}
 
 app.post("/login", (req, res) => {
   const user = { id: generateRandomString(4), email: req.body.email, password: req.body.password }
-  // const username = req.body.username
-  // console.log(req.body.username)
-  res.cookie("user_id", user.id)
-  res.redirect("/urls")
+  if (!checkIfEmailIsRegistered(req.body.email) || !checkIfPasswordMatch(req.body.password)) {
+    res.status(403).send('Error: Email and/or password cannot be found');
+  }
+  if (checkIfEmailIsRegistered(req.body.email)) {
+    if (checkIfPasswordMatch(req.body.password)) {
+      res.cookie("user_id", user.id);
+      res.redirect("/urls");
+    }
+  }
 });
+
+
+
+
 //create a logout if username exists
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id")
