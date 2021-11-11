@@ -8,8 +8,14 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+      longURL: "https://www.tsn.ca",
+      userID: "aJ48lW"
+  },
+  i3BoGr: {
+      longURL: "https://www.google.ca",
+      userID: "aJ48lW"
+  }
 };
 
 const users = {
@@ -27,7 +33,7 @@ const users = {
 
 const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 function generateRandomString(length) {
-  let result = ' ';
+  let result = '';
   const charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
@@ -43,17 +49,29 @@ app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id]};
   res.render("urls_index", templateVars);
 });
+//create helper function to check if user is registered and exists
+function checkIfUserExists(user_id){
+  for (let user in users) {
+    if (users[user].id === user_id) {
+      return users[user]
+    }
+  }
+  return false
+}
 
-app.get("/urls/new", (req, res) => {
+app.get("/urls/new", (req, res) =>{
   const templateVars = { user: users[req.cookies["user_id"]] }
+  if(!checkIfUserExists(req.cookies["user_id"])){
+    res.redirect("/login")
+  };
   res.render("urls_new", templateVars);
 });
 
-app.get("/urls/:shortURL/", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies["user_id"]] };
-  //  console.log("req",req.params)
-  // console.log("Urldatabase", urlDatabase)
-  // // console.log("template", templateVars)
+app.get("/urls/:shortURL", (req, res) => {
+  if(!urlDatabase[req.params.shortURL]){
+    res.status(400).send('Error: tiny url does not exist');
+  }
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies["user_id"]] };
   res.render("urls_show", templateVars);
 });
 
@@ -62,7 +80,7 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
+  delete urlDatabase[req.params.shortURL].shortURL;
   res.redirect("/urls");
 });
 
@@ -70,6 +88,7 @@ app.get("/register", (req, res) => {
   const templateVars = { user: null }
   res.render("registration",templateVars)
 });
+
 //create helper function that checks if email is already in database
 function checkIfEmailIsRegistered(email) {
   for (let user in users) {
@@ -91,6 +110,7 @@ app.post("/register", (req, res) => {
   if (checkIfEmailIsRegistered(req.body.email)) {
     res.status(400).send('Error: Email is already registered');
   }
+
   users[user.id] = user;
 
   res.cookie("user_id", user.id)
@@ -105,22 +125,30 @@ app.get("/hello", (req, res) => {
 
 app.post("/urls/:shortURL/", (req, res) => {
   //Update urlDatabase Obj 
-  urlDatabase[req.params.shortURL] = req.body.longURL
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL
   console.log("inside edit post route", req);
   res.redirect("/urls");
 });
 
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
+  if(!checkIfUserExists(req.cookies["user_id"])){
+    res.status(403).send('Error: User not found');
+  };
   //the shortURL-longURL key-value pair should be saved to the urlDatabase when it receives a POST request to /urls
   let shortURL = generateRandomString(6)
-  urlDatabase[shortURL] = `http://${req.body.longURL}`
+  urlDatabase[shortURL]={
+    longURL:`https://${req.body.longURL}`,
+    userID: req.cookies["user_id"]
+  }
+  console.log(urlDatabase)
+  console.log("SHORT URL",shortURL.length)
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL
-  const longURL = urlDatabase[shortURL]
+  const longURL = urlDatabase[shortURL].longURL
   // console.log(longURL)
   res.redirect(longURL);
 });
