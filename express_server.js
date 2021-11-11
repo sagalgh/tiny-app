@@ -40,19 +40,16 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: req.cookies.user_id };
+  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id]};
   res.render("urls_index", templateVars);
-
 });
 
 app.get("/urls/new", (req, res) => {
-  const user = { id: generateRandomString(4), email: req.body.email, password: req.body.password }
   const templateVars = { user: users[req.cookies["user_id"]] }
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL/", (req, res) => {
-  const user = { id: generateRandomString(4), email: req.body.email, password: req.body.password }
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies["user_id"]] };
   //  console.log("req",req.params)
   // console.log("Urldatabase", urlDatabase)
@@ -70,7 +67,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("registration")
+  const templateVars = { user: null }
+  res.render("registration",templateVars)
 });
 //create helper function that checks if email is already in database
 function checkIfEmailIsRegistered(email) {
@@ -130,7 +128,9 @@ app.get("/u/:shortURL", (req, res) => {
 //In the _header.ejs partial of app, create a <form> that POSTs to /login
 //Add an endpoint to handle a POST to /login in to Express server
 app.get("/login", (req, res) => {
-  res.render("login_form")
+  const user = null
+  const templateVars = {user}
+  res.render("login_form",templateVars)
 });
 
 //create helper function that checks if password given matches existing password 
