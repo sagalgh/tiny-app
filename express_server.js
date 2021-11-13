@@ -1,6 +1,7 @@
 const bodyParser = require("body-parser");
 const bcrypt = require('bcryptjs');
 const express = require("express");
+const { urlsForUser, checkIfUserExists, checkIfEmailIsRegistered, checkIfShortURLexists, generateRandomString} = require('helpers.js');
 // const cookieParser = require('cookie-parser')- no longer needed 
 const cookieSession = require('cookie-session')
 const app = express();
@@ -38,39 +39,20 @@ const users = {
   }
 };
 
-const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-function generateRandomString(length) {
-  let result = '';
-  const charactersLength = characters.length;
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-}
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  if(!checkIfUserExists(req.session.userId, users)){
+    res.redirect("/login")
+  };
+  res.redirect("/urls")
 });
 
-//helper function which should return the URLs where the 
-//userID is equal to the id of the currently logged-in user.
-
-function urlsForUser(id,urlDatabase){
-  const userURL= {};
-  for (let shortURL in urlDatabase){
-    if(urlDatabase[shortURL].userID === id){
-     userURL[shortURL] = urlDatabase[shortURL].longURL
-    };
-  }
-  return userURL;
-
-};
 
 
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlsForUser(req.session.userId,urlDatabase), user: users[req.session.userId]};
-  console.log("-----", urlsForUser(req.session.userId,urlDatabase))
+  // console.log("-----", urlsForUser(req.session.userId,urlDatabase))
   if(!req.session.userId){
     res.send("Register/Login to access page")
 
@@ -80,19 +62,11 @@ app.get("/urls", (req, res) => {
 });
 
 
-//create helper function to check if user is registered and exists
-function checkIfUserExists(user_id){
-  for (let user in users) {
-    if (users[user].id === user_id) {
-      return users[user]
-    }
-  }
-  return false
-}
+
 
 app.get("/urls/new", (req, res) =>{
   const templateVars = { user: users[req.session.userId] }
-  if(!checkIfUserExists(req.session.userId)){
+  if(!checkIfUserExists(req.session.userId, users)){
     res.redirect("/login")
   };
   res.render("urls_new", templateVars);
@@ -137,15 +111,6 @@ app.get("/register", (req, res) => {
   res.render("registration",templateVars)
 });
 
-//create helper function that checks if email is already in database
-function checkIfEmailIsRegistered(email) {
-  for (let user in users) {
-    if (users[user].email === email) {
-      return users[user]
-    }
-  }
-  return false
-}
 
 app.post("/register", (req, res) => {
   //created new user object
@@ -156,7 +121,7 @@ app.post("/register", (req, res) => {
     res.send('No email or password entered');
   }
   //check if email is already registered
-  if (checkIfEmailIsRegistered(req.body.email)) {
+  if (checkIfEmailIsRegistered(req.body.email,users)) {
     res.status(400).send('Error: Email is already registered');
   }
 
@@ -186,7 +151,7 @@ app.post("/urls/:shortURL/", (req, res) => {
 
 app.post("/urls", (req, res) => {
   // console.log(req.body);  // Log the POST request body to the console
-  if(!checkIfUserExists(req.session.userId)){
+  if(!checkIfUserExists(req.session.userId,users)){
     res.status(403).send('Error: User not found');
   };
   //the shortURL-longURL key-value pair should be saved to the urlDatabase when it receives a POST request to /urls
@@ -200,15 +165,6 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-//helper to check if shortURL exists in database
-function checkIfShortURLexists(id,urlDatabase){
-  for (let shortURL in urlDatabase){
-  if(urlDatabase[shortURL].shortURL === id){
-    return id
-  }
-  return false
-}
-}
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL
@@ -246,12 +202,12 @@ app.get("/login", (req, res) => {
 // }
 
 app.post("/login", (req, res) => {
-  const user = checkIfEmailIsRegistered(req.body.email);
+  const user = checkIfEmailIsRegistered(req.body.email, users);
   const hashedPassword = bcrypt.hashSync(req.body.password,10);
   if (!checkIfEmailIsRegistered(req.body.email) || !bcrypt.compareSync(req.body.password,hashedPassword)) {
     res.status(403).send('Error: Email and/or password cannot be found');
   }
-  if (checkIfEmailIsRegistered(req.body.email) && bcrypt.compareSync(req.body.password,hashedPassword)) {
+  if (checkIfEmailIsRegistered(req.body.email, users) && bcrypt.compareSync(req.body.password,hashedPassword)) {
       // res.cookie("user_id", user.id);
       req.session.userId = user.id;
       res.redirect("/urls");
