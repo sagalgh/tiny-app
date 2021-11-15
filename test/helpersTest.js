@@ -1,6 +1,6 @@
 const { assert } = require('chai');
 
-const { urlsForUser, checkIfUserExists, checkIfEmailIsRegistered} = require('../helpers.js');
+const { urlsForUser, checkIfUserExists, checkIfEmailIsRegistered} = require('./helpers.js');
 
 const urlDatabase = {
   b6UTxQ: {

@@ -1,7 +1,7 @@
 const bodyParser = require("body-parser");
 const bcrypt = require('bcryptjs');
 const express = require("express");
-const { urlsForUser, checkIfUserExists, checkIfEmailIsRegistered, generateRandomString} = require('helpers.js');
+const { urlsForUser, checkIfUserExists, checkIfEmailIsRegistered, generateRandomString} = require('./helpers.js');
 const cookieSession = require('cookie-session');
 const app = express();
 const PORT = 8080;
@@ -148,17 +148,14 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  
+  const longURL = urlDatabase[shortURL].longURL
   if (!urlDatabase[shortURL]) {
     res.send("URL does not exist!");
   }
-
   res.redirect(longURL);
 });
-
 
 app.get("/login", (req, res) => {
   const user = null;
@@ -169,16 +166,14 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const user = checkIfEmailIsRegistered(req.body.email, users);
   const hashedPassword = bcrypt.hashSync(req.body.password,10);
-  if (!checkIfEmailIsRegistered(req.body.email) || !bcrypt.compareSync(req.body.password,hashedPassword)) {
+  if (!user|| !bcrypt.compareSync(req.body.password,hashedPassword)) {
     res.status(403).send('Error: Email and/or password cannot be found');
   }
-  if (checkIfEmailIsRegistered(req.body.email, users) && bcrypt.compareSync(req.body.password,hashedPassword)) {
+  if (user && bcrypt.compareSync(req.body.password,hashedPassword)) {
     req.session.userId = user.id;
     res.redirect("/urls");
   }
-  // console.log(users)
-});
-
+})
 
 //create a logout if username exists
 app.post("/logout", (req, res) => {
