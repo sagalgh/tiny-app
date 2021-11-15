@@ -18,7 +18,7 @@ const checkIfUserExists = function(user_id,users){
       return users[user]
     }
   }
-  return false
+  return undefined
 }
 //create helper function that checks if email is already in database
 const checkIfEmailIsRegistered = function (email,users) {
@@ -27,19 +27,8 @@ const checkIfEmailIsRegistered = function (email,users) {
       return users[user]
     }
   }
-  return false
+  return undefined
 }
-
-//helper to check if shortURL exists in database
-const checkIfShortURLexists = function(id,urlDatabase){
-  for (let shortURL in urlDatabase){
-  if(urlDatabase[shortURL].shortURL === id){
-    return id
-  }
-  return false
-}
-}
-
 
 const generateRandomString= function(length) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -55,6 +44,5 @@ module.exports = {
   urlsForUser,
   checkIfUserExists,
   checkIfEmailIsRegistered,
-  checkIfShortURLexists,
   generateRandomString
 };  
