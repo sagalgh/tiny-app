@@ -14,27 +14,9 @@ app.use(cookieSession({
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "userRandomID"
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "user2RandomID"
-  }
 };
 
 const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "easy"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
 };
 
 app.get("/", (req, res) => {
@@ -62,7 +44,6 @@ app.get("/urls/new", (req, res) =>{
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  //check to see if user is logged in
   if (!req.session.userId) {
     res.send("Register/Login to access page");
   }
@@ -99,52 +80,39 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
+  if (!req.body.password || !req.body.email) {
+    res.status(400).send("No email or password entered. Please <a href='/register'> register </a>.");
+    return;
+  }
+  if (checkIfEmailIsRegistered(req.body.email,users)) {
+    res.status(400).send("Error: Email is already registered. Please <a href='/login'> here </a>");
+    return;
+  }
   const hashedPassword = bcrypt.hashSync(req.body.password,10);
   const user = { id: generateRandomString(4), email: req.body.email, password: hashedPassword };
-  //check is email or password is an empty string
-  if (!user.password || !user.email) {
-    res.send('No email or password entered');
-  }
-  //check if email is already registered
-  if (checkIfEmailIsRegistered(req.body.email,users)) {
-    res.status(400).send('Error: Email is already registered');
-  }
- //created new user object
   users[user.id] = user;
   req.session.userId = user.id;
   res.redirect("/urls");
 });
 
-app.get("/hello", (req, res) => {
-  const templateVars = { greeting: 'Hello World!', user: users[req.session.userId]};
-  res.render("hello_world", templateVars);
-});
 
 app.post("/urls/:shortURL/", (req, res) => {
-  //check to see if user is logged in
   if (!req.session.userId) {
     res.send("Register/Login to access page");
   }
-  //Update urlDatabase Obj
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
-  console.log(urlDatabase[req.params.shortURL].longURL);
-  console.log("inside edit post route", req);
   res.redirect("/urls");
 });
 
 app.post("/urls", (req, res) => {
-  // console.log(req.body);  // Log the POST request body to the console
   if (!checkIfUserExists(req.session.userId,users)) {
     res.status(403).send('Error: User not found');
   }
-  //the shortURL-longURL key-value pair should be saved to the urlDatabase when it receives a POST request to /urls
   let shortURL = generateRandomString(6);
   urlDatabase[shortURL] = {
     longURL:`https://${req.body.longURL}`,
     userID: req.session.userId
   };
-  // console.log(urlDatabase)
-  // console.log("SHORT URL",shortURL.length)
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -165,19 +133,17 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const user = checkIfEmailIsRegistered(req.body.email, users);
-  const hashedPassword = bcrypt.hashSync(req.body.password,10);
-  if (!user|| !bcrypt.compareSync(req.body.password,hashedPassword)) {
-    res.status(403).send('Error: Email and/or password cannot be found');
+  if (!user) {
+    res.status(403).send("Error: Invalid e-mail. Please <a href='/login'> login </a>.");
   }
-  if (user && bcrypt.compareSync(req.body.password,hashedPassword)) {
-    req.session.userId = user.id;
-    res.redirect("/urls");
+  if (!bcrypt.compareSync(req.body.password, user.password)) {
+    res.status(403).send("Error: Invalid password. Please <a href='/login'> login </a>.");
   }
+  req.session.userId = user.id;
+  res.redirect("/urls");
 })
 
-//create a logout if username exists
 app.post("/logout", (req, res) => {
-  //res.clearCookie("user_id")
   req.session = null;
   res.redirect("/urls");
 });
