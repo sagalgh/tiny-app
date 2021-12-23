@@ -45,13 +45,13 @@ app.get("/urls/new", (req, res) =>{
 
 app.get("/urls/:shortURL", (req, res) => {
   if (!req.session.userId) {
-    res.send("Register/Login to access page");
+    return res.send("Register/Login to access page");
   }
   if (!urlDatabase[req.params.shortURL]) {
-    res.status(400).send('Error: tiny url does not exist');
+    return res.status(400).send('Error: tiny url does not exist');
   }
   if (urlDatabase[req.params.shortURL].userID !== req.session.userId) {
-    res.send('Error: Not the owner of shortURL');
+    return res.send('Error: Not the owner of shortURL');
   }
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.session.userId] };
   res.render("urls_show", templateVars);
@@ -63,18 +63,21 @@ app.get("/urls.json", (req, res) => {
 
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (!req.session.userId) {
-    res.send("Register/Login to access page");
+    return res.send("Register/Login to access page");
 
   }
   if (urlDatabase[req.params.shortURL].userID !== req.session.userId) {
-    res.send("Error, do not have access");
-    return;
+    return res.send("Error, do not have access");
+  
   }
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
 });
 
 app.get("/register", (req, res) => {
+  if (checkIfUserExists(req.session.userId, users)) {
+    return res.redirect("/urls");
+  }
   const templateVars = { user: null };
   res.render("registration",templateVars);
 });
@@ -97,11 +100,16 @@ app.post("/register", (req, res) => {
 
 
 app.post("/urls/:shortURL/", (req, res) => {
-  if (!req.session.userId) {
-    res.send("Register/Login to access page");
+  const userID = req.session.id;
+  const user = users[userID];
+  if (!user || !userID) {
+    return res.status(400).send("Please <a href='/login'> login </a>.");
+  }
+  if(urlDatabase[shortURL] !== user.id){
+    return res.status(400).send("Please <a href='/login'> login </a>.");
   }
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
-  res.redirect("/urls");
+  res.redirect(`/urls/${shortURL}`);
 });
 
 app.post("/urls", (req, res) => {
@@ -118,7 +126,7 @@ app.post("/urls", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL
+  const longURL = urlDatabase[shortURL].longURL;
   if (!urlDatabase[shortURL]) {
     res.send("URL does not exist!");
   }
@@ -126,8 +134,11 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  const user = null;
-  const templateVars = {user};
+  //if user is logged in redirt to /urls
+  if (checkIfUserExists(req.session.userId, users)) {
+    return res.redirect("/urls");
+  }
+  const templateVars = {user: users[req.session.userId]};
   res.render("login_form",templateVars);
 });
 
@@ -141,7 +152,7 @@ app.post("/login", (req, res) => {
   }
   req.session.userId = user.id;
   res.redirect("/urls");
-})
+});
 
 app.post("/logout", (req, res) => {
   req.session = null;
