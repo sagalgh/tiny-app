@@ -100,16 +100,9 @@ app.post("/register", (req, res) => {
 
 
 app.post("/urls/:shortURL/", (req, res) => {
-  const userID = req.session.id;
-  const user = users[userID];
-  if (!user || !userID) {
-    return res.status(400).send("Please <a href='/login'> login </a>.");
-  }
-  if(urlDatabase[shortURL] !== user.id){
-    return res.status(400).send("Please <a href='/login'> login </a>.");
-  }
-  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`);
+  const shortURL = req.params.shortURL;
+  urlDatabase[shortURL].longURL = req.body.longURL;
+  res.redirect(`/urls`);
 });
 
 app.post("/urls", (req, res) => {
